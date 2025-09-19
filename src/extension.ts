@@ -32,9 +32,11 @@ class DjangoUrlProvider implements vscode.TreeDataProvider<UrlItem> {
         const urlsFiles = await vscode.workspace.findFiles('**/urls.py');
         
         for (const file of urlsFiles) {
+			console.log(file.fsPath);
             try {
                 const content = fs.readFileSync(file.fsPath, 'utf8');
                 const urlPatterns = this.parseUrlPatterns(content);
+				console.log(urlPatterns);
                 if (urlPatterns.length > 0) {
                     this.urls[file.fsPath] = urlPatterns;
                 }
@@ -47,20 +49,13 @@ class DjangoUrlProvider implements vscode.TreeDataProvider<UrlItem> {
 
     private parseUrlPatterns(content: string): string[] {
         const urlPatterns: string[] = [];
-        const urlPatternsRegex = /urlpatterns\s*=\s*\[(.|\n)*?\]/;
-        const pathRegex = /path\s*\(\s*['"]([^'"]+)['"]\s*,\s*[^,)]+\s*(?:,\s*name\s*=\s*['"]([^'"]+)['"])?/g;
-        
-        const match = content.match(urlPatternsRegex);
-        if (match) {
-            const urlPatternsBlock = match[0];
-            let pathMatch;
-            while ((pathMatch = pathRegex.exec(urlPatternsBlock)) !== null) {
-                const urlPath = pathMatch[1];
-                const name = pathMatch[2] || '';
-                urlPatterns.push(name ? `${name} (${urlPath})` : urlPath);
-            }
-        }
-        
+        const pathRegex = /path\s*\(\s*['"]([^'"]+)['"]\s*,\s*[^,)]+?(?:,\s*name\s*=\s*['"]([^'"]+)['"])?/g;
+		let pathMatch;
+		while ((pathMatch = pathRegex.exec(content)) !== null) {
+			const urlPath = pathMatch[1];
+			const name = pathMatch[2] || '';
+			urlPatterns.push(name ? `${name} (${urlPath})` : urlPath);
+		}
         return urlPatterns;
     }
 
@@ -130,8 +125,6 @@ export function activate(context: vscode.ExtensionContext) {
     // Watch for changes in urls.py files
     const watcher = vscode.workspace.createFileSystemWatcher('**/urls.py');
     watcher.onDidChange(() => urlProvider.updateUrls());
-    watcher.onDidCreate(() => urlProvider.updateUrls());
-    watcher.onDidDelete(() => urlProvider.updateUrls());
     
     // Register disposables
     context.subscriptions.push(
