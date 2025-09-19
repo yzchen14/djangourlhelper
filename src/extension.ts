@@ -10,7 +10,10 @@ class UrlItem extends vscode.TreeItem {
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
         public readonly path?: string,
         public readonly command?: vscode.Command,
-        public readonly iconPath?: vscode.ThemeIcon
+        public readonly iconPath?: vscode.ThemeIcon,
+        public readonly name?: string,
+        public readonly urlPath?: string,
+		public readonly subPath?: string
     ) {
         super(label, collapsibleState);
         this.tooltip = this.path || '';
@@ -98,8 +101,11 @@ class DjangoUrlProvider implements vscode.TreeDataProvider<UrlItem> {
 			const subPath = parts.slice(-2).join("\\").replace("\\", "/").replace(".py", "");
 
             return patterns.map(pattern => {
+				const name = pattern['name'];
+				const urlPath = pattern['urlPath'];
+				
                 return new UrlItem(
-                    pattern['urlPath'] + "(" + pattern['name'] + ")",
+                    pattern['urlPath'] + "[" + pattern['name'] + "]",
                     vscode.TreeItemCollapsibleState.None,
                     undefined,
                     {
@@ -107,11 +113,18 @@ class DjangoUrlProvider implements vscode.TreeDataProvider<UrlItem> {
                         title: 'Open URL',
                         arguments: [subPath, pattern]
                     },
-                    new vscode.ThemeIcon('link')
+                    new vscode.ThemeIcon('link'),
+					pattern['name'],
+					pattern['urlPath'],
+					subPath
                 );
             });
         }
     }
+
+	quickInsertUrl(){
+
+	}
 }
 
 
