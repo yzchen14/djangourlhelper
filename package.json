@@ -1,23 +1,68 @@
 {
   "name": "djangourlhelper",
-  "displayName": "DjangoUrlHelper",
-  "description": "",
-  "version": "0.0.1",
+  "displayName": "Django URL Helper",
+  "description": "A VS Code extension to help manage and navigate Django URLs",
+  "version": "0.1.0",
   "engines": {
-    "vscode": "^1.104.0"
+    "vscode": "^1.75.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onView:djangoUrlExplorer",
+    "onCommand:djangourlhelper.refresh",
+    "onCommand:djangourlhelper.openUrl"
+  ],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "django-url-helper",
+          "title": "Django URL Helper",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "django-url-helper": [
+        {
+          "id": "djangoUrlExplorer",
+          "name": "URL Explorer",
+          "contextualTitle": "Django URL Explorer"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "djangourlhelper.helloWorld",
-        "title": "Hello World"
+        "command": "djangourlhelper.refresh",
+        "title": "Refresh Django URLs",
+        "icon": "$(refresh)",
+        "category": "Django URL Helper"
+      },
+      {
+        "command": "djangourlhelper.openUrl",
+        "title": "Open URL",
+        "category": "Django URL Helper"
       }
-    ]
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "djangourlhelper.refresh",
+          "when": "view == djangoUrlExplorer",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "djangourlhelper.openUrl",
+          "when": "view == djangoUrlExplorer",
+          "group": "inline"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -28,14 +73,14 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.104.0",
+    "@types/vscode": "^1.75.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "22.x",
-    "@typescript-eslint/eslint-plugin": "^8.39.0",
-    "@typescript-eslint/parser": "^8.39.0",
-    "eslint": "^9.32.0",
-    "typescript": "^5.9.2",
-    "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2"
-  }
+    "@types/node": "18.x",
+    "@typescript-eslint/eslint-plugin": "^5.59.0",
+    "@typescript-eslint/parser": "^5.59.0",
+    "eslint": "^8.38.0",
+    "typescript": "^5.0.4",
+    "@vscode/test-electron": "^2.3.0"
+  },
+  "icon": "resources/icon.png"
 }
