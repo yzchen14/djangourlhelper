@@ -3,6 +3,10 @@
   "displayName": "Django URL Helper",
   "description": "A VS Code extension to help manage and navigate Django URLs",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/djangourlhelper.git"
+  },
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -71,13 +75,12 @@
   },
   "devDependencies": {
     "@types/vscode": "^1.75.0",
-    "@types/mocha": "^10.0.10",
+    "@types/mocha": "^10.0.1",
     "@types/node": "18.x",
     "@typescript-eslint/eslint-plugin": "^5.59.0",
     "@typescript-eslint/parser": "^5.59.0",
     "eslint": "^8.38.0",
     "typescript": "^5.0.4",
     "@vscode/test-electron": "^2.3.0"
-  },
-  "icon": "resources/icon.png"
+  }
 }
