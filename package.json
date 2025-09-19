@@ -11,8 +11,7 @@
   ],
   "activationEvents": [
     "onView:djangoUrlExplorer",
-    "onCommand:djangourlhelper.refresh",
-    "onCommand:djangourlhelper.openUrl"
+    "onCommand:djangourlhelper.refresh"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -42,8 +41,8 @@
         "category": "Django URL Helper"
       },
       {
-        "command": "djangourlhelper.openUrl",
-        "title": "Open URL",
+        "command": "djangourlhelper.copyUrl",
+        "title": "Copy URL",
         "category": "Django URL Helper"
       }
     ],
@@ -53,13 +52,6 @@
           "command": "djangourlhelper.refresh",
           "when": "view == djangoUrlExplorer",
           "group": "navigation"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "djangourlhelper.openUrl",
-          "when": "view == djangoUrlExplorer",
-          "group": "inline"
         }
       ]
     }

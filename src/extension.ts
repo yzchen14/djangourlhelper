@@ -21,7 +21,8 @@ class DjangoUrlProvider implements vscode.TreeDataProvider<UrlItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<UrlItem | undefined | null | void> = new vscode.EventEmitter<UrlItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<UrlItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
-    private urls: { [key: string]: string[] } = {};
+    private urls: { [key: string]: { urlPath: string; name: string }[] } = {};
+	public urlNameSpace: { [key: string]: string } = {};
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
@@ -32,11 +33,11 @@ class DjangoUrlProvider implements vscode.TreeDataProvider<UrlItem> {
         const urlsFiles = await vscode.workspace.findFiles('**/urls.py');
         
         for (const file of urlsFiles) {
-			console.log(file.fsPath);
             try {
                 const content = fs.readFileSync(file.fsPath, 'utf8');
                 const urlPatterns = this.parseUrlPatterns(content);
-				console.log(urlPatterns);
+				const nameSpaceDict = this.parseNameSpace(content);
+				Object.assign(this.urlNameSpace, nameSpaceDict);
                 if (urlPatterns.length > 0) {
                     this.urls[file.fsPath] = urlPatterns;
                 }
@@ -47,14 +48,26 @@ class DjangoUrlProvider implements vscode.TreeDataProvider<UrlItem> {
         this.refresh();
     }
 
-    private parseUrlPatterns(content: string): string[] {
-        const urlPatterns: string[] = [];
-        const pathRegex = /path\s*\(\s*['"]([^'"]+)['"]\s*,\s*[^,)]+?(?:,\s*name\s*=\s*['"]([^'"]+)['"])?/g;
+	private parseNameSpace(content: string){
+		const includeRegex = /include\s*\(\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"][^'"]+['"]\s*\)\s*,\s*namespace\s*=\s*['"]([^'"]+)['"]\s*\)/g;
+		const nameSpaceDict: { [key: string]: string } = {};
+		let nameSpaceMatch;
+		while ((nameSpaceMatch = includeRegex.exec(content)) !== null) {
+			const urlFilename = nameSpaceMatch[1].replace(".", "/");
+			const namespace = nameSpaceMatch[2] || '';
+			nameSpaceDict[urlFilename] = namespace;
+		}
+		return nameSpaceDict;
+	}
+
+    private parseUrlPatterns(content: string): { urlPath: string; name: string }[] {
+        const urlPatterns: { urlPath: string; name: string }[] = [];
+        const pathRegex = /path\s*\(\s*['"]([^'"]+)['"]\s*,\s*[^,()]+(?:,\s*name\s*=\s*['"]([^'"]+)['"])?\s*\)/g;
 		let pathMatch;
 		while ((pathMatch = pathRegex.exec(content)) !== null) {
 			const urlPath = pathMatch[1];
 			const name = pathMatch[2] || '';
-			urlPatterns.push(name ? `${name} (${urlPath})` : urlPath);
+			urlPatterns.push({"urlPath": urlPath, "name": name});
 		}
         return urlPatterns;
     }
@@ -81,21 +94,36 @@ class DjangoUrlProvider implements vscode.TreeDataProvider<UrlItem> {
         } else {
             // Child level - show URL patterns for the selected urls.py
             const patterns = this.urls[element.path!] || [];
+			const parts = element.path!.split("\\");
+			const subPath = parts.slice(-2).join("\\").replace("\\", "/").replace(".py", "");
+
             return patterns.map(pattern => {
                 return new UrlItem(
-                    pattern,
+                    pattern['urlPath'] + "(" + pattern['name'] + ")",
                     vscode.TreeItemCollapsibleState.None,
                     undefined,
                     {
-                        command: 'djangourlhelper.openUrl',
+                        command: 'djangourlhelper.copyUrl',
                         title: 'Open URL',
-                        arguments: [pattern]
+                        arguments: [subPath, pattern]
                     },
                     new vscode.ThemeIcon('link')
                 );
             });
         }
     }
+}
+
+
+
+function fetchUrlSnipplet(filePath: string, element: {"urlPath": string; "name": string}, urlNameSpace: { [key: string]: string }){
+	let urlSnipplet = "";
+	if (filePath in urlNameSpace) {
+		urlSnipplet =  `const url_${element.name} = "{% url '${urlNameSpace[filePath]}:${element.name}'%}"`;
+	}else{
+		urlSnipplet =  `const url_${element.name} = "${element.name}"`;
+	}
+	return urlSnipplet;
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -114,9 +142,13 @@ export function activate(context: vscode.ExtensionContext) {
         urlProvider.updateUrls();
     });
     
-    const openUrlCommand = vscode.commands.registerCommand('djangourlhelper.openUrl', (url: string) => {
-        vscode.window.showInformationMessage(`Opening URL: ${url}`);
-        // Add your URL opening logic here
+    const openUrlCommand = vscode.commands.registerCommand('djangourlhelper.copyUrl', (filePath: string, element: {"urlPath": string; "name": string}) => {
+        const urlSnipplet = fetchUrlSnipplet(filePath, element, urlProvider.urlNameSpace);
+		// copy urlSnipplet to clipboard
+        vscode.env.clipboard.writeText(urlSnipplet);
+        vscode.window.showInformationMessage("URL snippet copied to clipboard.");
+
+
     });
     
     // Initial update
