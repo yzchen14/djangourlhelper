@@ -44,6 +44,11 @@
         "command": "djangourlhelper.copyUrl",
         "title": "Copy URL",
         "category": "Django URL Helper"
+      },
+      {
+        "command": "djangourlhelper.quickInsertUrl",
+        "title": "Quick Insert URL",
+        "category": "Django URL Helper"
       }
     ],
     "menus": {

@@ -122,9 +122,65 @@ class DjangoUrlProvider implements vscode.TreeDataProvider<UrlItem> {
         }
     }
 
-	quickInsertUrl(){
+	async quickInsertUrl() {
+        // Collect all URL patterns
+        const items: vscode.QuickPickItem[] = [];
+        const urlMap: { [key: string]: { filePath: string; element: { urlPath: string; name: string } } } = {};
 
-	}
+        // Build the quick pick items and mapping
+        for (const [filePath, patterns] of Object.entries(this.urls)) {
+            const dirName = path.basename(path.dirname(filePath));
+            const fileName = path.basename(filePath);
+            
+            for (const pattern of patterns) {
+                const label = pattern.name ? `${pattern.name} (${pattern.urlPath})` : pattern.urlPath;
+                const description = `${dirName}/${fileName}`;
+                const fullLabel = label;
+                
+                items.push({
+                    label: fullLabel,
+                    description: description,
+                    detail: pattern.urlPath
+                });
+
+                urlMap[fullLabel] = {
+                    filePath: filePath,
+                    element: pattern
+                };
+            }
+        }
+
+        if (items.length === 0) {
+            vscode.window.showInformationMessage('No URL patterns found.');
+            return;
+        }
+
+        // Show quick pick
+        const selected = await vscode.window.showQuickPick(items, {
+            placeHolder: 'Select a URL pattern to insert',
+            matchOnDescription: true,
+            matchOnDetail: true
+        });
+
+        if (!selected) {
+            return; // User cancelled
+        }
+
+        // Get the URL snippet
+        const { filePath, element } = urlMap[selected.label];
+        const urlSnippet = fetchUrlSnipplet(filePath, element, this.urlNameSpace);
+
+        // Insert into active editor
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+            const position = editor.selection.active;
+            editor.edit(editBuilder => {
+                editBuilder.insert(position, urlSnippet);
+            });
+        } else {
+            vscode.window.showErrorMessage('No active editor found');
+        }
+    }
 }
 
 
@@ -132,9 +188,9 @@ class DjangoUrlProvider implements vscode.TreeDataProvider<UrlItem> {
 function fetchUrlSnipplet(filePath: string, element: {"urlPath": string; "name": string}, urlNameSpace: { [key: string]: string }){
 	let urlSnipplet = "";
 	if (filePath in urlNameSpace) {
-		urlSnipplet =  `const url_${element.name} = "{% url '${urlNameSpace[filePath]}:${element.name}'%}"`;
+		urlSnipplet =  `const url_${element.name} = "{% url '${urlNameSpace[filePath]}:${element.name}'%}";`;
 	}else{
-		urlSnipplet =  `const url_${element.name} = "${element.name}"`;
+		urlSnipplet =  `const url_${element.name} = "${element.name}";`;
 	}
 	return urlSnipplet;
 }
@@ -160,8 +216,10 @@ export function activate(context: vscode.ExtensionContext) {
 		// copy urlSnipplet to clipboard
         vscode.env.clipboard.writeText(urlSnipplet);
         vscode.window.showInformationMessage("URL snippet copied to clipboard.");
-
-
+    });
+    
+    const quickInsertUrlCommand = vscode.commands.registerCommand('djangourlhelper.quickInsertUrl', () => {
+        urlProvider.quickInsertUrl();
     });
     
     // Initial update
@@ -176,6 +234,7 @@ export function activate(context: vscode.ExtensionContext) {
         treeView,
         disposable,
         openUrlCommand,
+        quickInsertUrlCommand,
         watcher,
         vscode.window.registerTreeDataProvider('djangoUrlExplorer', urlProvider)
     );
