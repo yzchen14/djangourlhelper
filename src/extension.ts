@@ -24,7 +24,7 @@ class DjangoUrlProvider implements vscode.TreeDataProvider<UrlItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<UrlItem | undefined | null | void> = new vscode.EventEmitter<UrlItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<UrlItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
-    private urls: { [key: string]: { urlPath: string; name: string }[] } = {};
+    private urls: { [key: string]: { urlPath: string; name: string }[];} = {};
 	public urlNameSpace: { [key: string]: string } = {};
 
     refresh(): void {
@@ -168,7 +168,8 @@ class DjangoUrlProvider implements vscode.TreeDataProvider<UrlItem> {
 
         // Get the URL snippet
         const { filePath, element } = urlMap[selected.label];
-        const urlSnippet = fetchUrlSnipplet(filePath, element, this.urlNameSpace);
+		const subPath = filePath.split("\\").slice(-2).join("\\").replace("\\", "/").replace(".py", "");
+        const urlSnippet = fetchUrlSnipplet(subPath, element, this.urlNameSpace);
 
         // Insert into active editor
         const editor = vscode.window.activeTextEditor;
@@ -211,7 +212,7 @@ export function activate(context: vscode.ExtensionContext) {
         urlProvider.updateUrls();
     });
     
-    const openUrlCommand = vscode.commands.registerCommand('djangourlhelper.copyUrl', (filePath: string, element: {"urlPath": string; "name": string}) => {
+    const copyUrlCommand = vscode.commands.registerCommand('djangourlhelper.copyUrl', (filePath: string, element: {"urlPath": string; "name": string}) => {
         const urlSnipplet = fetchUrlSnipplet(filePath, element, urlProvider.urlNameSpace);
 		// copy urlSnipplet to clipboard
         vscode.env.clipboard.writeText(urlSnipplet);
@@ -233,7 +234,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         treeView,
         disposable,
-        openUrlCommand,
+        copyUrlCommand,
         quickInsertUrlCommand,
         watcher,
         vscode.window.registerTreeDataProvider('djangoUrlExplorer', urlProvider)
